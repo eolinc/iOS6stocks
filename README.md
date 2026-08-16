@@ -118,19 +118,21 @@ liste di titoli:
   tornare indietro, ora sì (oltre a poter ritoccare di nuovo il pulsante
   "i").
 
-## Cornice iPhone 4
+## Striscia altoparlante e tasto home
 
-L'app è sempre renderizzata dentro una cornice grafica che riproduce
-l'iPhone 4 (schermo interno a 320×480px, la risoluzione reale del
-dispositivo originale), centrata e scalata automaticamente per adattarsi a
-qualunque finestra o schermo (`js/frame-scale.js`), senza mai generare
-scroll o tagliare contenuto. È una scelta estetica volontaria coerente col
-tema dell'app: **non** è più una PWA a schermo intero come nella prima
-versione — anche una volta installata su Android, l'app apparirà "dentro"
-la cornice invece di riempire tutto lo schermo del telefono reale. Se in
-futuro preferisci tornare al comportamento a schermo intero, basta
-rimuovere il wrapper `#deviceStage` / `#iphone4Frame` da `index.html` e i
-relativi stili da `css/style.css`.
+L'app torna ad essere a schermo intero (edge-to-edge, come una vera PWA
+installata), con due elementi decorativi che richiamano l'estetica iOS
+vista nella schermata home di riferimento:
+
+- una **striscia nera in alto** con la fessura dell'altoparlante centrata
+  (puramente estetica, sopra la vera status bar di sistema);
+- un **tasto home flottante e semi-trasparente** fisso in basso, che
+  riporta sempre al grafico principale (utile anche come scorciatoia in
+  più oltre al pulsante "‹" nella schermata di modifica).
+
+Se preferisci togliere questi due elementi e tornare a un'interfaccia
+completamente pulita, basta rimuovere `#topSpeakerBar` e `#homeButton` da
+`index.html` e i relativi stili da `css/style.css`.
 
 ## Pubblicazione su GitHub Pages
 
