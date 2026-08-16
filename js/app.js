@@ -1,10 +1,12 @@
 /* =========================================================================
    Borsa — app.js
-   Logica applicativa: gestione watchlist, fetch quotazioni/storico tramite
-   backend proxy (con fallback locale se il backend non è raggiungibile),
-   rendering della lista, disegno del grafico su <canvas>, flip-card per
-   l'editing dei titoli. Nessuna chiave API è mai presente in questo file:
-   tutte le chiamate a provider esterni passano dal backend (vedi /server).
+   Logica applicativa: gestione di più "pagine" di titoli (come le pagine
+   swipeabili del widget originale, indicate dai puntini in basso), fetch
+   quotazioni/storico tramite backend proxy (con fallback locale se il
+   backend non è raggiungibile), rendering, disegno del grafico su
+   <canvas>, flip-card per l'editing/riordino dei titoli. Nessuna chiave
+   API è mai presente in questo file: tutte le chiamate ai provider esterni
+   passano dal backend (vedi /server).
    ========================================================================= */
 
 (() => {
@@ -14,16 +16,25 @@
   /* Configurazione                                                     */
   /* ----------------------------------------------------------------- */
   const API_BASE = window.BORSA_API_BASE || ""; // impostato in js/config.js — vedi quel file per GitHub Pages
-  const STORAGE_KEY = "borsa.watchlist.v1";
+  const PAGES_KEY = "borsa.pages.v1";
+  const LEGACY_WATCHLIST_KEY = "borsa.watchlist.v1"; // formato usato prima delle pagine multiple
   const MODE_KEY = "borsa.displaymode.v1";
 
-  const DEFAULT_WATCHLIST = [
+  const DEFAULT_INDICES = [
     { symbol: "^DJI",  name: "Dow Jones" },
     { symbol: "^FTSE", name: "FTSE 100" },
     { symbol: "^HSI",  name: "Hang Seng" },
     { symbol: "^N225", name: "Nikkei 225" },
     { symbol: "^AORD", name: "All Ordinaries" },
     { symbol: "^STI",  name: "Straits Times" }
+  ];
+  const DEFAULT_STOCKS = [
+    { symbol: "AAPL", name: "Apple Inc." },
+    { symbol: "GOOGL", name: "Alphabet Inc." }
+  ];
+  const DEFAULT_PAGES = [
+    { id: "p1", title: "Titoli",  symbols: DEFAULT_INDICES.slice() },
+    { id: "p2", title: "Azioni",  symbols: DEFAULT_STOCKS.slice() }
   ];
 
   // Directory statica minima per la ricerca offline (fallback se /api/search
@@ -43,13 +54,44 @@
     { symbol: "^GDAXI", name: "DAX" }
   ];
 
-  const RANGE_LABELS = { "1d":"1g","1w":"1s","1m":"1m","3m":"3m","6m":"6m","1y":"1a","2y":"2a" };
+  /* ----------------------------------------------------------------- */
+  /* Stato + persistenza pagine                                         */
+  /* ----------------------------------------------------------------- */
+  function loadPages() {
+    try {
+      const raw = localStorage.getItem(PAGES_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length) return parsed;
+      }
+    } catch (e) { /* ignora e prova la migrazione */ }
 
-  /* ----------------------------------------------------------------- */
-  /* Stato                                                              */
-  /* ----------------------------------------------------------------- */
+    // Migrazione dal vecchio formato a lista unica (versione precedente
+    // dell'app, prima delle pagine multiple): la lista già personalizzata
+    // dall'utente diventa la prima pagina; la seconda pagina resta quella
+    // di default, così non si perde nulla di ciò che era stato aggiunto.
+    try {
+      const legacyRaw = localStorage.getItem(LEGACY_WATCHLIST_KEY);
+      if (legacyRaw) {
+        const legacyList = JSON.parse(legacyRaw);
+        if (Array.isArray(legacyList) && legacyList.length) {
+          return [
+            { id: "p1", title: "Titoli", symbols: legacyList },
+            { id: "p2", title: "Indici", symbols: DEFAULT_INDICES.slice() }
+          ];
+        }
+      }
+    } catch (e) { /* ignora e usa i default */ }
+
+    return DEFAULT_PAGES.map(p => ({ id: p.id, title: p.title, symbols: p.symbols.slice() }));
+  }
+  function savePages() {
+    localStorage.setItem(PAGES_KEY, JSON.stringify(state.pages));
+  }
+
   const state = {
-    watchlist: loadWatchlist(),
+    pages: loadPages(),
+    currentPageIndex: 0,
     quotes: {},          // symbol -> {price, change, changePct, name, currency}
     activeSymbol: null,
     activeRange: "1w",
@@ -58,28 +100,31 @@
     editing: false
   };
 
-  function loadWatchlist() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) return JSON.parse(raw);
-    } catch (e) { /* ignora e usa i default */ }
-    return DEFAULT_WATCHLIST.slice();
-  }
-  function saveWatchlist() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.watchlist));
+  function currentPage() { return state.pages[state.currentPageIndex]; }
+  function currentSymbols() { return currentPage().symbols; }
+  function allSymbols() {
+    const seen = new Set();
+    const out = [];
+    state.pages.forEach(p => p.symbols.forEach(s => {
+      if (!seen.has(s.symbol)) { seen.add(s.symbol); out.push(s.symbol); }
+    }));
+    return out;
   }
 
   /* ----------------------------------------------------------------- */
   /* Elementi DOM                                                       */
   /* ----------------------------------------------------------------- */
   const el = {
+    quotesCard: document.getElementById("quotesCard"),
     quotesList: document.getElementById("quotesList"),
+    pageDots: document.getElementById("pageDots"),
     chartCard: document.getElementById("chartCard"),
     chartCanvas: document.getElementById("chartCanvas"),
     chartMessage: document.getElementById("chartMessage"),
     chartSymbolLabel: document.getElementById("chartSymbolLabel"),
     rangeControl: document.getElementById("rangeControl"),
     infoBtn: document.getElementById("infoBtn"),
+    backCloseBtn: document.getElementById("backCloseBtn"),
     addBtn: document.getElementById("addBtn"),
     editList: document.getElementById("editList"),
     addSymbolInput: document.getElementById("addSymbolInput"),
@@ -182,7 +227,7 @@
   }
 
   /* ----------------------------------------------------------------- */
-  /* Rendering — lista quotazioni                                       */
+  /* Formattazione                                                       */
   /* ----------------------------------------------------------------- */
   function formatPrice(v) {
     if (v == null || isNaN(v)) return "—";
@@ -199,9 +244,12 @@
     return sign + Math.abs(v).toFixed(2) + "%";
   }
 
+  /* ----------------------------------------------------------------- */
+  /* Rendering — lista quotazioni (pagina corrente)                     */
+  /* ----------------------------------------------------------------- */
   function renderList() {
     el.quotesList.innerHTML = "";
-    state.watchlist.forEach(item => {
+    currentSymbols().forEach(item => {
       const q = state.quotes[item.symbol];
       const li = document.createElement("li");
       li.className = "quote-row" + (item.symbol === state.activeSymbol ? " selected" : "");
@@ -228,29 +276,128 @@
     });
   }
 
+  /* ----------------------------------------------------------------- */
+  /* Puntini di paginazione — un puntino per pagina, tap o swipe          */
+  /* ----------------------------------------------------------------- */
+  function renderPageDots() {
+    el.pageDots.innerHTML = "";
+    state.pages.forEach((p, i) => {
+      const dot = document.createElement("span");
+      dot.className = "dot" + (i === state.currentPageIndex ? " active" : "");
+      dot.addEventListener("click", () => goToPage(i));
+      el.pageDots.appendChild(dot);
+    });
+  }
+
+  function goToPage(index) {
+    const clamped = Math.max(0, Math.min(state.pages.length - 1, index));
+    if (clamped === state.currentPageIndex) return;
+    state.currentPageIndex = clamped;
+    renderPageDots();
+    renderList();
+    const first = currentSymbols()[0];
+    if (first) selectSymbol(first.symbol);
+    else { state.activeSymbol = null; loadAndDrawChart(); }
+  }
+
+  // Swipe orizzontale sulla lista per cambiare pagina; lo scroll verticale
+  // della lista continua a funzionare normalmente (touch-action: pan-y in CSS).
+  (function setupSwipe() {
+    let swipe = null;
+    el.quotesList.addEventListener("pointerdown", (e) => {
+      swipe = { startX: e.clientX, startY: e.clientY, dx: 0, dy: 0, pointerId: e.pointerId, decided: false, horizontal: false };
+    });
+    el.quotesList.addEventListener("pointermove", (e) => {
+      if (!swipe || e.pointerId !== swipe.pointerId) return;
+      swipe.dx = e.clientX - swipe.startX;
+      swipe.dy = e.clientY - swipe.startY;
+      if (!swipe.decided && (Math.abs(swipe.dx) > 8 || Math.abs(swipe.dy) > 8)) {
+        swipe.decided = true;
+        swipe.horizontal = Math.abs(swipe.dx) > Math.abs(swipe.dy);
+      }
+    });
+    function endSwipe(e) {
+      if (!swipe || e.pointerId !== swipe.pointerId) { swipe = null; return; }
+      if (swipe.horizontal && Math.abs(swipe.dx) > 40) {
+        goToPage(state.currentPageIndex + (swipe.dx < 0 ? 1 : -1));
+      }
+      swipe = null;
+    }
+    el.quotesList.addEventListener("pointerup", endSwipe);
+    el.quotesList.addEventListener("pointercancel", () => { swipe = null; });
+  })();
+
+  /* ----------------------------------------------------------------- */
+  /* Editing / riordino titoli (facciata posteriore della card grafico)  */
+  /* ----------------------------------------------------------------- */
   function renderEditList() {
     el.editList.innerHTML = "";
-    state.watchlist.forEach((item, idx) => {
+    currentSymbols().forEach((item, idx) => {
       const li = document.createElement("li");
       li.className = "edit-row";
+      li.dataset.symbol = item.symbol;
       li.innerHTML = `
-        <button class="remove-btn" data-idx="${idx}" aria-label="Rimuovi">&minus;</button>
+        <button class="remove-btn" aria-label="Rimuovi">&minus;</button>
         <span class="edit-row-label">${item.symbol.replace(/^\^/, "")}
           <span class="edit-row-name">${item.name || ""}</span>
         </span>
-        <span class="drag-handle">&#9776;</span>`;
+        <span class="drag-handle" aria-label="Trascina per riordinare">&#9776;</span>`;
       li.querySelector(".remove-btn").addEventListener("click", () => {
-        state.watchlist.splice(idx, 1);
-        saveWatchlist();
-        if (state.activeSymbol && !state.watchlist.find(w => w.symbol === state.activeSymbol)) {
-          state.activeSymbol = state.watchlist[0] ? state.watchlist[0].symbol : null;
+        const symbols = currentSymbols();
+        symbols.splice(idx, 1);
+        savePages();
+        if (state.activeSymbol && !symbols.find(w => w.symbol === state.activeSymbol)) {
+          state.activeSymbol = symbols[0] ? symbols[0].symbol : null;
         }
         renderEditList();
         renderList();
         refreshQuotes();
       });
+      attachDragHandlers(li);
       el.editList.appendChild(li);
     });
+  }
+
+  // Riordino via trascinamento (Pointer Events, funziona anche a schermo
+  // touch): tenendo premuto sull'icona ☰ si sposta la riga tra le altre;
+  // l'ordine viene salvato al rilascio.
+  function attachDragHandlers(li) {
+    const handle = li.querySelector(".drag-handle");
+    if (!handle) return;
+    handle.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      li.classList.add("dragging");
+
+      function onMove(ev) {
+        const afterElement = getDragAfterElement(el.editList, ev.clientY);
+        if (afterElement == null) el.editList.appendChild(li);
+        else el.editList.insertBefore(li, afterElement);
+      }
+      function onUp() {
+        li.classList.remove("dragging");
+        document.removeEventListener("pointermove", onMove);
+        document.removeEventListener("pointerup", onUp);
+        commitEditListOrder();
+      }
+      document.addEventListener("pointermove", onMove);
+      document.addEventListener("pointerup", onUp);
+    });
+  }
+  function getDragAfterElement(container, y) {
+    const rows = [...container.querySelectorAll(".edit-row:not(.dragging)")];
+    return rows.reduce((closest, child) => {
+      const box = child.getBoundingClientRect();
+      const offset = y - box.top - box.height / 2;
+      if (offset < 0 && offset > closest.offset) return { offset, element: child };
+      return closest;
+    }, { offset: Number.NEGATIVE_INFINITY, element: null }).element;
+  }
+  function commitEditListOrder() {
+    const order = Array.from(el.editList.children).map((li) => li.dataset.symbol);
+    const symbols = currentSymbols();
+    symbols.sort((a, b) => order.indexOf(a.symbol) - order.indexOf(b.symbol));
+    savePages();
+    renderList();
   }
 
   /* ----------------------------------------------------------------- */
@@ -369,11 +516,12 @@
   }
 
   /* ----------------------------------------------------------------- */
-  /* Refresh dati                                                        */
+  /* Refresh dati — recupera le quotazioni di TUTTE le pagine insieme,   */
+  /* così lo swipe tra pagine non richiede una nuova chiamata di rete.   */
   /* ----------------------------------------------------------------- */
   async function refreshQuotes() {
-    if (!state.watchlist.length) { renderList(); return; }
-    const symbols = state.watchlist.map(w => w.symbol);
+    const symbols = allSymbols();
+    if (!symbols.length) { renderList(); return; }
     const data = await fetchQuotes(symbols);
     state.quotes = data;
     let anyOffline = false;
@@ -381,7 +529,10 @@
     el.footerText.textContent = anyOffline
       ? "Modalità dimostrativa — nessuna connessione al provider"
       : "Quotazioni ritardate di 20 minuti";
-    if (!state.activeSymbol && state.watchlist[0]) state.activeSymbol = state.watchlist[0].symbol;
+    if (!state.activeSymbol || !symbols.includes(state.activeSymbol)) {
+      const first = currentSymbols()[0];
+      state.activeSymbol = first ? first.symbol : (symbols[0] || null);
+    }
     renderList();
     if (state.activeSymbol) loadAndDrawChart();
   }
@@ -404,6 +555,7 @@
     if (state.editing) renderEditList();
   }
   el.infoBtn.addEventListener("click", () => toggleFlip());
+  if (el.backCloseBtn) el.backCloseBtn.addEventListener("click", () => toggleFlip(false));
 
   let searchTimer = null;
   el.addSymbolInput.addEventListener("input", () => {
@@ -427,9 +579,10 @@
   function addSymbol(rawSymbol, name) {
     const symbol = rawSymbol.trim().toUpperCase();
     if (!symbol) return;
-    if (state.watchlist.find(w => w.symbol === symbol)) return;
-    state.watchlist.push({ symbol, name: name || "" });
-    saveWatchlist();
+    const symbols = currentSymbols();
+    if (symbols.find(w => w.symbol === symbol)) return;
+    symbols.push({ symbol, name: name || "" });
+    savePages();
     el.addSymbolInput.value = "";
     el.searchResults.classList.remove("open");
     el.searchResults.innerHTML = "";
@@ -461,6 +614,7 @@
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("sw.js").catch(() => {});
     }
+    renderPageDots();
     renderList();
     await refreshQuotes();
     setInterval(refreshQuotes, 60000); // aggiornamento periodico, come l'app originale
