@@ -11,4 +11,4 @@
  * ottieni, es:
  *   window.BORSA_API_BASE = "https://borsa-proxy.tuonome.workers.dev";
  */
-window.BORSA_API_BASE = "https://holy-fire-e514.infoeolweb.workers.dev/";
+window.BORSA_API_BASE = "https://holy-fire-e514.infoeolweb.workers.dev";
