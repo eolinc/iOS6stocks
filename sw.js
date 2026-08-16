@@ -1,11 +1,10 @@
-const CACHE_NAME = "borsa-v4";
+const CACHE_NAME = "borsa-v5";
 const CORE_ASSETS = [
   "./",
   "./index.html",
   "./css/style.css",
   "./js/config.js",
   "./js/app.js",
-  "./js/frame-scale.js",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
