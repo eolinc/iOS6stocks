@@ -96,6 +96,42 @@ npm install
 PROVIDER=alphavantage ALPHA_VANTAGE_API_KEY=la_tua_chiave npm start
 ```
 
+## Pagine multiple, riordino e navigazione
+
+Come nel widget originale (le immagini di riferimento mostravano più
+"pagine" di titoli, indicate dai puntini in basso), l'app supporta più
+liste di titoli:
+
+- **Swipe** orizzontale sulla lista per passare da una pagina all'altra
+  (lo scroll verticale della lista continua a funzionare normalmente).
+- **Tocco su un puntino** in basso per saltare direttamente a quella pagina.
+- Di default ci sono due pagine — "Titoli" (indici) e "Azioni" (Apple,
+  Alphabet) — modificabili liberamente. Per aggiungere altre pagine oltre
+  a queste due, va estesa la costante `DEFAULT_PAGES` in `js/app.js`
+  (funzionalità non ancora esposta come pulsante nell'interfaccia).
+- Nella facciata di modifica (pulsante "i"), i titoli della pagina
+  corrente si possono **riordinare trascinandoli** dall'icona ☰: tieni
+  premuto e sposta la riga nella nuova posizione, l'ordine si salva al
+  rilascio.
+- Sempre nella facciata di modifica, il pulsante **‹** in alto a destra
+  torna al grafico — prima quel percorso non aveva un modo esplicito per
+  tornare indietro, ora sì (oltre a poter ritoccare di nuovo il pulsante
+  "i").
+
+## Cornice iPhone 4
+
+L'app è sempre renderizzata dentro una cornice grafica che riproduce
+l'iPhone 4 (schermo interno a 320×480px, la risoluzione reale del
+dispositivo originale), centrata e scalata automaticamente per adattarsi a
+qualunque finestra o schermo (`js/frame-scale.js`), senza mai generare
+scroll o tagliare contenuto. È una scelta estetica volontaria coerente col
+tema dell'app: **non** è più una PWA a schermo intero come nella prima
+versione — anche una volta installata su Android, l'app apparirà "dentro"
+la cornice invece di riempire tutto lo schermo del telefono reale. Se in
+futuro preferisci tornare al comportamento a schermo intero, basta
+rimuovere il wrapper `#deviceStage` / `#iphone4Frame` da `index.html` e i
+relativi stili da `css/style.css`.
+
 ## Pubblicazione su GitHub Pages
 
 GitHub Pages serve **solo file statici**: `index.html`, `css/`, `js/`,
