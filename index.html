@@ -19,95 +19,86 @@
 </head>
 <body>
 
-<div id="deviceStage">
-  <div id="iphone4Frame">
-    <div class="i4-top-row">
-      <span class="i4-camera"></span>
-      <span class="i4-speaker"></span>
-    </div>
+<div id="topSpeakerBar" aria-hidden="true"><span class="pill"></span></div>
+<div id="statusbar-spacer"></div>
 
-    <div class="i4-screen" id="i4Screen">
-      <div id="statusbar-spacer"></div>
+<div id="app">
 
-      <div id="app">
+  <!-- ===== Quotes list card ===== -->
+  <section class="card quotes-card" id="quotesCard" aria-label="Elenco titoli">
+    <button id="addBtn" class="add-btn" aria-label="Aggiungi titolo">+</button>
+    <ul class="quotes-list" id="quotesList">
+      <!-- righe generate via JS -->
+    </ul>
+  </section>
 
-        <!-- ===== Quotes list card ===== -->
-        <section class="card quotes-card" id="quotesCard" aria-label="Elenco titoli">
-          <button id="addBtn" class="add-btn" aria-label="Aggiungi titolo">+</button>
-          <ul class="quotes-list" id="quotesList">
-            <!-- righe generate via JS -->
-          </ul>
-        </section>
+  <!-- ===== Chart card (flips to settings) ===== -->
+  <section class="card chart-card" id="chartCard">
+    <div class="chart-card-flip" id="chartFlip">
 
-        <!-- ===== Chart card (flips to settings) ===== -->
-        <section class="card chart-card" id="chartCard">
-          <div class="chart-card-flip" id="chartFlip">
+      <!-- ---- FRONT FACE ---- -->
+      <div class="face face-front">
 
-            <!-- ---- FRONT FACE ---- -->
-            <div class="face face-front">
+        <div class="segmented-control" id="rangeControl">
+          <button data-range="1d" class="seg active">1g</button>
+          <button data-range="1w" class="seg">1s</button>
+          <button data-range="1m" class="seg">1m</button>
+          <button data-range="3m" class="seg">3m</button>
+          <button data-range="6m" class="seg">6m</button>
+          <button data-range="1y" class="seg">1a</button>
+          <button data-range="2y" class="seg">2a</button>
+        </div>
 
-              <div class="segmented-control" id="rangeControl">
-                <button data-range="1d" class="seg active">1g</button>
-                <button data-range="1w" class="seg">1s</button>
-                <button data-range="1m" class="seg">1m</button>
-                <button data-range="3m" class="seg">3m</button>
-                <button data-range="6m" class="seg">6m</button>
-                <button data-range="1y" class="seg">1a</button>
-                <button data-range="2y" class="seg">2a</button>
-              </div>
+        <div class="chart-area" id="chartArea">
+          <canvas id="chartCanvas"></canvas>
+          <div class="chart-message" id="chartMessage"></div>
+          <div class="chart-symbol-label" id="chartSymbolLabel"></div>
+        </div>
 
-              <div class="chart-area" id="chartArea">
-                <canvas id="chartCanvas"></canvas>
-                <div class="chart-message" id="chartMessage"></div>
-                <div class="chart-symbol-label" id="chartSymbolLabel"></div>
-              </div>
-
-              <div class="chart-footer">
-                <div class="source-badge" id="sourceBadge">Y!</div>
-                <div class="footer-text" id="footerText">Quotazioni ritardate di 20 minuti</div>
-                <button class="info-btn" id="infoBtn" aria-label="Impostazioni">i</button>
-              </div>
-            </div>
-
-            <!-- ---- BACK FACE (settings / edit) ---- -->
-            <div class="face face-back">
-              <div class="back-header-row">
-                <span class="back-header">Titoli</span>
-                <button class="back-close-btn" id="backCloseBtn" aria-label="Torna al grafico">&lsaquo;</button>
-              </div>
-
-              <div class="add-row">
-                <input id="addSymbolInput" type="text" placeholder="Simbolo, es. AAPL" autocomplete="off" autocapitalize="characters">
-                <button id="addSymbolBtn">Aggiungi</button>
-              </div>
-              <div class="search-results" id="searchResults"></div>
-
-              <ul class="edit-list" id="editList"></ul>
-
-              <div class="back-footer">
-                <span class="back-footer-label">Mostra</span>
-                <div class="segmented-control small" id="displayModeControl">
-                  <button data-mode="price" class="seg active">Prezzo</button>
-                  <button data-mode="percent" class="seg">%</button>
-                  <button data-mode="marketcap" class="seg">Cap.</button>
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </section>
-
-        <div class="page-dots" id="pageDots"></div>
-
+        <div class="chart-footer">
+          <div class="source-badge" id="sourceBadge">Y!</div>
+          <div class="footer-text" id="footerText">Quotazioni ritardate di 20 minuti</div>
+          <button class="info-btn" id="infoBtn" aria-label="Impostazioni">i</button>
+        </div>
       </div>
-    </div>
 
-    <div class="i4-home-button" aria-hidden="true"></div>
-  </div>
+      <!-- ---- BACK FACE (settings / edit) ---- -->
+      <div class="face face-back">
+        <div class="back-header-row">
+          <span class="back-header">Titoli</span>
+          <button class="back-close-btn" id="backCloseBtn" aria-label="Torna al grafico">&lsaquo;</button>
+        </div>
+
+        <div class="add-row">
+          <input id="addSymbolInput" type="text" placeholder="Simbolo, es. AAPL" autocomplete="off" autocapitalize="characters">
+          <button id="addSymbolBtn">Aggiungi</button>
+        </div>
+        <div class="search-results" id="searchResults"></div>
+
+        <ul class="edit-list" id="editList"></ul>
+
+        <div class="back-footer">
+          <span class="back-footer-label">Mostra</span>
+          <div class="segmented-control small" id="displayModeControl">
+            <button data-mode="price" class="seg active">Prezzo</button>
+            <button data-mode="percent" class="seg">%</button>
+            <button data-mode="marketcap" class="seg">Cap.</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <div class="page-dots" id="pageDots"></div>
+
 </div>
+
+<button id="homeButton" aria-label="Torna alla schermata principale">
+  <span class="home-icon"></span>
+</button>
 
 <script src="js/config.js"></script>
 <script src="js/app.js"></script>
-<script src="js/frame-scale.js"></script>
 </body>
 </html>
