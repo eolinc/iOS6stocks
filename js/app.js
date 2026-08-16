@@ -125,6 +125,7 @@
     rangeControl: document.getElementById("rangeControl"),
     infoBtn: document.getElementById("infoBtn"),
     backCloseBtn: document.getElementById("backCloseBtn"),
+    homeButton: document.getElementById("homeButton"),
     addBtn: document.getElementById("addBtn"),
     editList: document.getElementById("editList"),
     addSymbolInput: document.getElementById("addSymbolInput"),
@@ -556,6 +557,7 @@
   }
   el.infoBtn.addEventListener("click", () => toggleFlip());
   if (el.backCloseBtn) el.backCloseBtn.addEventListener("click", () => toggleFlip(false));
+  if (el.homeButton) el.homeButton.addEventListener("click", () => toggleFlip(false));
 
   let searchTimer = null;
   el.addSymbolInput.addEventListener("input", () => {
