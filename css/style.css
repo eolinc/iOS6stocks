@@ -5,121 +5,79 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-:root {
-  --phone-w: 348px;   /* cornice esterna */
-  --phone-h: 604px;
-  --phone-bezel-top: 54px;
-  --phone-bezel-bottom: 70px;
-  --phone-bezel-side: 14px;
-  /* schermo risultante: 320 x 480 — la risoluzione reale in punti dell'iPhone 4 */
-}
-
 html, body {
   height: 100%;
   margin: 0;
-  overflow: hidden;
-  background: linear-gradient(160deg, #4b4f57 0%, #24262b 55%, #101114 100%);
+  overflow: hidden; /* niente scroll orizzontale/rimbalzo indesiderato */
+  background: radial-gradient(ellipse at top, #3a4a68 0%, #17223a 70%, #0c1526 100%);
   font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   touch-action: manipulation;
 }
 
 /* ---------------------------------------------------------------------- */
-/* Palco che centra la cornice del telefono e la scala per adattarla       */
-/* a qualunque schermo, senza mai generare scroll.                         */
+/* Striscia nera in alto con la fessura dell'altoparlante, come nella      */
+/* home screen di riferimento — puramente decorativa, sopra la vera        */
+/* status bar del telefono (che resta quella reale del sistema).           */
 /* ---------------------------------------------------------------------- */
-#deviceStage {
-  position: fixed;
-  inset: 0;
+#topSpeakerBar {
+  height: 22px;
+  background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
-  overflow: hidden;
 }
-
-#iphone4Frame {
-  position: relative;
-  width: var(--phone-w);
-  height: var(--phone-h);
-  flex: 0 0 auto;
-  border-radius: 46px;
-  background: linear-gradient(160deg, #45484d 0%, #1a1b1e 45%, #050506 100%);
-  box-shadow:
-    0 30px 70px rgba(0,0,0,0.55),
-    inset 0 0 0 2px rgba(255,255,255,0.08),
-    inset 0 0 0 6px rgba(0,0,0,0.5);
-  transform-origin: center center;
-}
-
-.i4-top-row {
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: var(--phone-bezel-top);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-}
-.i4-camera {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 35%, #4a6a9a, #05070a 70%);
-  box-shadow: 0 0 0 2px rgba(255,255,255,0.04);
-}
-.i4-speaker {
-  width: 56px; height: 6px;
+#topSpeakerBar .pill {
+  width: 120px;
+  height: 5px;
   border-radius: 4px;
-  background: #08090a;
-  box-shadow: inset 0 1px 1px rgba(0,0,0,0.9), inset 0 -1px 1px rgba(255,255,255,0.05);
-}
-
-.i4-screen {
-  position: absolute;
-  top: var(--phone-bezel-top);
-  left: var(--phone-bezel-side);
-  right: var(--phone-bezel-side);
-  bottom: var(--phone-bezel-bottom);
-  border-radius: 4px;
-  overflow: hidden;
-  background: radial-gradient(ellipse at top, #3a4a68 0%, #17223a 70%, #0c1526 100%);
-  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.7), inset 0 0 12px rgba(0,0,0,0.5);
-}
-
-.i4-home-button {
-  position: absolute;
-  bottom: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 44px; height: 44px;
-  border-radius: 50%;
-  background: radial-gradient(circle at 35% 30%, #55585d, #17181a 75%);
-  box-shadow:
-    inset 0 1px 2px rgba(255,255,255,0.18),
-    inset 0 -1px 3px rgba(0,0,0,0.7),
-    0 1px 1px rgba(0,0,0,0.5);
-}
-.i4-home-button::after {
-  content: "";
-  position: absolute;
-  inset: 13px;
-  border: 1px solid rgba(255,255,255,0.22);
-  border-radius: 4px;
+  background: #1c1c1e;
+  box-shadow: inset 0 1px 1px rgba(0,0,0,0.85), inset 0 -1px 1px rgba(255,255,255,0.05);
 }
 
 #statusbar-spacer {
   height: env(safe-area-inset-top, 0px);
-  background: transparent;
+  background: #000;
 }
 
 #app {
-  height: 100%;
-  width: 100%;
+  height: calc(100% - 22px - env(safe-area-inset-top, 0px));
   display: flex;
   flex-direction: column;
-  padding: 8px 6px 8px;
-  gap: 7px;
+  padding: 10px 8px calc(78px + env(safe-area-inset-bottom, 0px));
+  gap: 8px;
+  max-width: 520px;
+  margin: 0 auto;
 }
+
+/* ---------------------------------------------------------------------- */
+/* Tasto home flottante in basso, come nel launcher di riferimento —        */
+/* fisso sullo schermo, semi-trasparente. Riporta al grafico principale.    */
+/* ---------------------------------------------------------------------- */
+#homeButton {
+  position: fixed;
+  left: 50%;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  transform: translateX(-50%);
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255,255,255,0.32);
+  background: rgba(90,95,110,0.22);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  box-shadow: 0 2px 10px rgba(0,0,0,0.35), inset 0 1px 1px rgba(255,255,255,0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+}
+#homeButton .home-icon {
+  width: 22px; height: 22px;
+  border: 1.5px solid rgba(255,255,255,0.8);
+  border-radius: 5px;
+}
+#homeButton:active { background: rgba(90,95,110,0.4); }
 
 /* ---------------------------------------------------------------------- */
 /* Generic card shell — glossy rounded rectangle, iOS6 UITableView style   */
@@ -547,14 +505,12 @@ html, body {
 .dot.active { background: rgba(255,255,255,0.85); background-clip: content-box; }
 
 /* ---------------------------------------------------------------------- */
-/* Small screens                                                           */
+/* Schermi stretti                                                          */
 /* ---------------------------------------------------------------------- */
-/* ---------------------------------------------------------------------- */
-/* Lo schermo interno è sempre 320px (risoluzione iPhone 4): spazio         */
-/* limitato, quindi il nome esteso della società resta nascosto di default. */
-/* ---------------------------------------------------------------------- */
-.q-name { display: none; }
-.segmented-control .seg { font-size: 10.5px; }
+@media (max-width: 340px) {
+  .q-name { display: none; }
+  .segmented-control .seg { font-size: 10.5px; }
+}
 
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
