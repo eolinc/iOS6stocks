@@ -5,14 +5,106 @@
 
 * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
+:root {
+  --phone-w: 348px;   /* cornice esterna */
+  --phone-h: 604px;
+  --phone-bezel-top: 54px;
+  --phone-bezel-bottom: 70px;
+  --phone-bezel-side: 14px;
+  /* schermo risultante: 320 x 480 — la risoluzione reale in punti dell'iPhone 4 */
+}
+
 html, body {
   height: 100%;
   margin: 0;
-  overflow: hidden; /* niente scroll orizzontale/rimbalzo indesiderato */
-  background: radial-gradient(ellipse at top, #3a4a68 0%, #17223a 70%, #0c1526 100%);
+  overflow: hidden;
+  background: linear-gradient(160deg, #4b4f57 0%, #24262b 55%, #101114 100%);
   font-family: -apple-system, "Helvetica Neue", Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   touch-action: manipulation;
+}
+
+/* ---------------------------------------------------------------------- */
+/* Palco che centra la cornice del telefono e la scala per adattarla       */
+/* a qualunque schermo, senza mai generare scroll.                         */
+/* ---------------------------------------------------------------------- */
+#deviceStage {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+#iphone4Frame {
+  position: relative;
+  width: var(--phone-w);
+  height: var(--phone-h);
+  flex: 0 0 auto;
+  border-radius: 46px;
+  background: linear-gradient(160deg, #45484d 0%, #1a1b1e 45%, #050506 100%);
+  box-shadow:
+    0 30px 70px rgba(0,0,0,0.55),
+    inset 0 0 0 2px rgba(255,255,255,0.08),
+    inset 0 0 0 6px rgba(0,0,0,0.5);
+  transform-origin: center center;
+}
+
+.i4-top-row {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: var(--phone-bezel-top);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.i4-camera {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #4a6a9a, #05070a 70%);
+  box-shadow: 0 0 0 2px rgba(255,255,255,0.04);
+}
+.i4-speaker {
+  width: 56px; height: 6px;
+  border-radius: 4px;
+  background: #08090a;
+  box-shadow: inset 0 1px 1px rgba(0,0,0,0.9), inset 0 -1px 1px rgba(255,255,255,0.05);
+}
+
+.i4-screen {
+  position: absolute;
+  top: var(--phone-bezel-top);
+  left: var(--phone-bezel-side);
+  right: var(--phone-bezel-side);
+  bottom: var(--phone-bezel-bottom);
+  border-radius: 4px;
+  overflow: hidden;
+  background: radial-gradient(ellipse at top, #3a4a68 0%, #17223a 70%, #0c1526 100%);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,0.7), inset 0 0 12px rgba(0,0,0,0.5);
+}
+
+.i4-home-button {
+  position: absolute;
+  bottom: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #55585d, #17181a 75%);
+  box-shadow:
+    inset 0 1px 2px rgba(255,255,255,0.18),
+    inset 0 -1px 3px rgba(0,0,0,0.7),
+    0 1px 1px rgba(0,0,0,0.5);
+}
+.i4-home-button::after {
+  content: "";
+  position: absolute;
+  inset: 13px;
+  border: 1px solid rgba(255,255,255,0.22);
+  border-radius: 4px;
 }
 
 #statusbar-spacer {
@@ -21,13 +113,12 @@ html, body {
 }
 
 #app {
-  height: calc(100% - env(safe-area-inset-top, 0px));
+  height: 100%;
+  width: 100%;
   display: flex;
   flex-direction: column;
-  padding: 10px 8px calc(10px + env(safe-area-inset-bottom, 0px));
-  gap: 8px;
-  max-width: 520px;
-  margin: 0 auto;
+  padding: 8px 6px 8px;
+  gap: 7px;
 }
 
 /* ---------------------------------------------------------------------- */
@@ -60,6 +151,7 @@ html, body {
   padding: 0;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y; /* lascia lo scroll verticale al browser, riserva l'orizzontale allo swipe JS */
 }
 
 .quote-row {
@@ -304,15 +396,36 @@ html, body {
 }
 
 /* Back face (edit / settings) */
+.back-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 6px 0 8px;
+  border-bottom: 1px solid #a9b1bd;
+}
 .back-header {
-  text-align: center;
   font-size: 15px;
   font-weight: 700;
   color: #2b3446;
-  padding: 6px 0 8px;
   text-shadow: 0 1px 0 rgba(255,255,255,0.5);
-  border-bottom: 1px solid #a9b1bd;
 }
+.back-close-btn {
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: 1px solid #2c4676;
+  background: linear-gradient(to bottom, #6f97e0, #2f5cb4);
+  color: #fff;
+  font-size: 16px;
+  font-weight: 800;
+  line-height: 1;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.5), 0 1px 2px rgba(0,0,0,0.3);
+}
+.back-close-btn:active { background: linear-gradient(to bottom, #2f5cb4, #6f97e0); }
 .add-row {
   display: flex;
   gap: 6px;
@@ -375,6 +488,13 @@ html, body {
   background: linear-gradient(to bottom, #fdfefe, #f1f4f8);
 }
 .edit-row:last-child { border-bottom: none; }
+.edit-row.dragging {
+  opacity: 0.7;
+  position: relative;
+  z-index: 5;
+  box-shadow: 0 6px 14px rgba(0,0,0,0.35);
+  background: linear-gradient(to bottom, #ffffff, #e6ebf2);
+}
 .remove-btn {
   width: 20px; height: 20px;
   border-radius: 50%;
@@ -391,10 +511,11 @@ html, body {
 .edit-row-name { font-size: 11px; color: #6b7690; }
 .drag-handle {
   color: #99a1ad;
-  font-size: 16px;
+  font-size: 18px;
   letter-spacing: -1px;
   cursor: grab;
-  padding: 0 2px;
+  padding: 4px 6px;
+  touch-action: none; /* evita che lo scroll della lista interferisca col trascinamento */
 }
 
 .back-footer {
@@ -412,23 +533,28 @@ html, body {
 .page-dots {
   display: flex;
   justify-content: center;
-  gap: 6px;
+  gap: 4px;
   padding: 2px 0 0;
 }
 .dot {
   width: 6px; height: 6px;
   border-radius: 50%;
   background: rgba(255,255,255,0.25);
+  padding: 6px; /* area di tocco più ampia, mantenendo il pallino visivamente piccolo */
+  background-clip: content-box;
+  box-sizing: content-box;
 }
-.dot.active { background: rgba(255,255,255,0.85); }
+.dot.active { background: rgba(255,255,255,0.85); background-clip: content-box; }
 
 /* ---------------------------------------------------------------------- */
 /* Small screens                                                           */
 /* ---------------------------------------------------------------------- */
-@media (max-width: 340px) {
-  .q-name { display: none; }
-  .segmented-control .seg { font-size: 10.5px; }
-}
+/* ---------------------------------------------------------------------- */
+/* Lo schermo interno è sempre 320px (risoluzione iPhone 4): spazio         */
+/* limitato, quindi il nome esteso della società resta nascosto di default. */
+/* ---------------------------------------------------------------------- */
+.q-name { display: none; }
+.segmented-control .seg { font-size: 10.5px; }
 
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
